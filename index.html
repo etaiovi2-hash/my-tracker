@@ -3,233 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itai's Command Center</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Itai's OS | Hybrid Calendar</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --bg: #0b0e14;
-            --card: #161b22;
-            --primary: #58a6ff;
-            --success: #238636;
-            --text: #c9d1d9;
-            --accent: #bc8cff;
+            --bg: #0b0e14; --card: #161b22; --primary: #58a6ff;
+            --success: #238636; --text: #c9d1d9; --accent: #bc8cff;
         }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container { width: 100%; max-width: 600px; }
-
-        /* Header & Level System */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .level-badge { background: linear-gradient(45deg, var(--primary), var(--accent)); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.3); }
-
-        /* XP Bar */
-        .xp-container { width: 100%; height: 8px; background: #30363d; border-radius: 4px; margin-bottom: 30px; overflow: hidden; }
-        #xp-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
-
-        /* Card Styling */
-        .card {
-            background: var(--card);
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: transform 0.2s;
-        }
-        .card:hover { transform: translateY(-2px); border-color: var(--primary); }
-
-        /* Task Items */
-        .task-row { display: flex; align-items: flex-start; gap: 15px; padding: 15px 0; border-bottom: 1px solid #30363d; }
-        .task-row:last-child { border: none; }
+        body { background-color: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin: 0; padding: 15px; padding-bottom: 80px; }
+        .container { width: 100%; max-width: 500px; margin: auto; }
+        .card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 15px; }
         
-        .checkbox-wrapper { position: relative; width: 28px; height: 28px; }
-        input[type="checkbox"] { width: 28px; height: 28px; cursor: pointer; accent-color: var(--success); }
+        /* Calendar */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-day { padding: 10px 5px; border-radius: 8px; font-size: 14px; cursor: pointer; border: 1px solid transparent; }
+        .calendar-day.active { border-color: var(--primary); background: rgba(88, 166, 255, 0.1); font-weight: bold; }
+        .calendar-day.today { color: var(--accent); text-decoration: underline; }
 
-        .task-info { flex-grow: 1; }
-        .task-label { display: block; font-size: 17px; font-weight: 500; margin-bottom: 5px; }
-        
-        .efficiency-box { background: #0d1117; padding: 12px; border-radius: 8px; margin-top: 10px; display: none; }
-        input[type="checkbox"]:checked ~ .efficiency-box { display: block; animation: fadeIn 0.3s; }
+        /* Tasks */
+        .task-item { display: flex; align-items: center; background: #0d1117; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-right: 4px solid var(--primary); }
+        .task-item.default { border-right-color: var(--accent); } /* משימות קבועות בצבע שונה */
+        .task-item input[type="checkbox"] { margin-left: 12px; width: 20px; height: 20px; cursor: pointer; }
+        .task-item.completed { opacity: 0.5; border-right-color: var(--success); text-decoration: line-through; }
 
-        input[type="range"] { width: 100%; height: 6px; border-radius: 5px; background: #30363d; outline: none; }
-
-        /* Floating Bot */
-        #bot-bubble {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            background: var(--card);
-            border: 1px solid var(--primary);
-            padding: 15px;
-            border-radius: 20px 20px 20px 5px;
-            max-width: 200px;
-            font-size: 14px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .btn-reset { background: transparent; border: 1px dotted #f85149; color: #f85149; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+        .add-task-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        input[type="text"] { background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 8px; flex-grow: 1; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>COMMAND CENTER</h1>
-        <div class="level-badge" id="level-text">LEVEL 1</div>
-    </div>
+    <h2 style="text-align:center; font-size:18px; color:var(--primary);">COMMAND CENTER</h2>
 
-    <div class="xp-container">
-        <div id="xp-fill"></div>
-    </div>
-
+    <!-- לוח שנה -->
     <div class="card">
-        <h2 style="font-size: 18px; color: var(--primary);">DAILY OBJECTIVES</h2>
+        <h3 id="monthTitle" style="margin-top:0; font-size:16px;">מאי 2026</h3>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <!-- משימות -->
+    <div class="card">
+        <h3 id="selectedDateTitle" style="margin-top:0; font-size:14px; color:var(--accent);">טוען...</h3>
+        
+        <div class="add-task-box">
+            <input type="text" id="newTaskInput" placeholder="הוסף משימה ספציפית להיום...">
+            <button onclick="addNewTask()">+</button>
+        </div>
+
         <div id="taskList"></div>
     </div>
-
-    <div class="card">
-        <h2 style="font-size: 18px; color: var(--accent);">WEEKLY FLOW</h2>
-        <div style="height: 150px;"><canvas id="performanceChart"></canvas></div>
-    </div>
-
-    <button class="btn-reset" onclick="resetDay()">RESET SYSTEM</button>
-</div>
-
-<div id="bot-bubble">
-    <span style="font-size: 24px;">🤖</span>
-    <span id="bot-msg">מערכת מוכנה. מחכה לפקודות שלך, איתי.</span>
 </div>
 
 <script>
-    const taskData = [
-        { id: 'train', name: 'TRAINING', desc: 'כדורסל / אימון כוח', xp: 25 },
-        { id: 'code', name: 'DEV / STUDY', desc: 'תכנות ולימודים', xp: 25 },
-        { id: 'biz', name: 'BUSINESS', desc: 'קידום Shopify / מסחר', xp: 40 },
-        { id: 'mind', name: 'FLOW STATE', desc: 'זמן חופשי ומנוחה', xp: 10 }
+    // המשימות הקבועות שלך כפי שהגדרנו
+    const defaultTasks = [
+        "TRAINING (כדורסל / אימון כוח)",
+        "DEV / STUDY (תכנות ולימודים)",
+        "BUSINESS (קידום Shopify / מסחר)",
+        "FLOW STATE (זמן חופשי ומנוחה)"
     ];
 
-    let currentXP = 0;
-    let level = 1;
+    let tasksDB = JSON.parse(localStorage.getItem('itai_tasks_v3')) || {};
+    let selectedDate = new Date().toISOString().split('T')[0];
 
     function init() {
-        const list = document.getElementById('taskList');
-        taskData.forEach(t => {
-            list.innerHTML += `
-                <div class="task-row">
-                    <div class="task-info">
-                        <label class="task-label">${t.name}</label>
-                        <span style="font-size:12px; color:#8b949e">${t.desc}</span>
-                        <div class="efficiency-box">
-                            <span style="font-size:11px">INTENSITY: <b id="val-${t.id}">5</b>/10</span>
-                            <input type="range" id="range-${t.id}" min="1" max="10" value="5" oninput="updateStats()">
-                        </div>
-                    </div>
-                    <input type="checkbox" id="${t.id}" onchange="updateStats()">
-                </div>`;
-        });
-        load();
+        renderCalendar();
+        selectDate(selectedDate);
     }
 
-    function updateStats() {
-        let done = 0;
-        let dayXP = 0;
-        
-        taskData.forEach(t => {
-            const checked = document.getElementById(t.id).checked;
-            const eff = document.getElementById(`range-${t.id}`).value;
-            document.getElementById(`val-${t.id}`).innerText = eff;
-            
-            if(checked) {
-                done++;
-                dayXP += t.xp * (eff / 5);
-            }
-        });
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
-        // XP Logic
-        currentXP = dayXP % 100;
-        level = Math.floor(dayXP / 100) + 1;
-        
-        document.getElementById('xp-fill').style.width = currentXP + "%";
-        document.getElementById('level-text').innerText = "LEVEL " + level;
-
-        // Bot Reactions
-        const bot = document.getElementById('bot-msg');
-        if(done === 4) {
-            bot.innerText = "ביצועים מושלמים! המערכת בשיא.";
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        } else if (done > 0) {
-            bot.innerText = "זיהיתי התקדמות. המשך כך.";
+        for (let i = 1; i <= daysInMonth; i++) {
+            const currentDay = new Date(now.getFullYear(), now.getMonth(), i);
+            const dateStr = currentDay.toISOString().split('T')[0];
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day' + (dateStr === selectedDate ? ' active' : '') + (dateStr === new Date().toISOString().split('T')[0] ? ' today' : '');
+            dayEl.innerText = i;
+            dayEl.onclick = () => selectDate(dateStr);
+            grid.appendChild(dayEl);
         }
+    }
 
+    function selectDate(dateStr) {
+        selectedDate = dateStr;
+        document.getElementById('selectedDateTitle').innerText = "משימות ליום: " + new Date(dateStr).toLocaleDateString('he-IL', {day:'numeric', month:'long'});
+        
+        // אם היום הזה פעם ראשונה נפתח, ניצור לו את הדיפולט
+        if (!tasksDB[dateStr]) {
+            tasksDB[dateStr] = defaultTasks.map(t => ({ text: t, completed: false, isDefault: true }));
+        }
+        
+        renderCalendar();
+        loadTasks();
+    }
+
+    function loadTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        tasksDB[selectedDate].forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = `task-item ${task.completed ? 'completed' : ''} ${task.isDefault ? 'default' : ''}`;
+            taskEl.innerHTML = `
+                <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${index})">
+                <span>${task.text}</span>
+            `;
+            list.appendChild(taskEl);
+        });
+    }
+
+    function addNewTask() {
+        const input = document.getElementById('newTaskInput');
+        if (!input.value) return;
+        tasksDB[selectedDate].push({ text: input.value, completed: false, isDefault: false });
+        input.value = '';
+        save();
+    }
+
+    function toggleTask(index) {
+        tasksDB[selectedDate][index].completed = !tasksDB[selectedDate][index].completed;
+        if(tasksDB[selectedDate][index].completed) confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
         save();
     }
 
     function save() {
-        const state = taskData.map(t => ({
-            id: t.id,
-            checked: document.getElementById(t.id).checked,
-            eff: document.getElementById(`range-${t.id}`).value
-        }));
-        localStorage.setItem('itai_pro_dashboard', JSON.stringify(state));
+        localStorage.setItem('itai_tasks_v3', JSON.stringify(tasksDB));
+        loadTasks();
     }
-
-    function load() {
-        const saved = JSON.parse(localStorage.getItem('itai_pro_dashboard'));
-        if(saved) {
-            saved.forEach(s => {
-                const el = document.getElementById(s.id);
-                if(el) {
-                    el.checked = s.checked;
-                    document.getElementById(`range-${s.id}`).value = s.eff;
-                }
-            });
-            updateStats();
-        }
-    }
-
-    function resetDay() {
-        if(confirm("המערכת תתאפס. מוכן ליום חדש?")) {
-            taskData.forEach(t => {
-                document.getElementById(t.id).checked = false;
-                document.getElementById(`range-${t.id}`).value = 5;
-            });
-            updateStats();
-        }
-    }
-
-    // Chart
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-            datasets: [{
-                label: 'Performance',
-                data: [40, 80, 60, 95, 0, 0, 0],
-                backgroundColor: '#58a6ff',
-                borderRadius: 5
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: { y: { display: false }, x: { grid: { display: false } } },
-            plugins: { legend: { display: false } }
-        }
-    });
 
     init();
 </script>
