@@ -3,167 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Growth Tracker & Coach | Itai</title>
+    <title>Itai's Command Center</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --primary: #007aff; --success: #34c759; --bg: #f2f2f7; --card: #ffffff; --bot: #5856d6; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1c1c1e; padding: 20px; margin: 0; padding-bottom: 100px; }
-        .container { max-width: 500px; margin: auto; }
-        
-        /* Stats & Cards */
-        .stat-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; justify-content: space-around; text-align: center; }
-        .stat-val { display: block; font-size: 22px; font-weight: bold; color: var(--primary); }
-        .stat-label { font-size: 12px; color: #8e8e93; }
-        .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        
-        /* Tasks */
-        .task-item { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f9f9f9; }
-        .task-header { display: flex; align-items: center; justify-content: space-between; }
-        input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--success); }
-        .eff-container { background: #f9f9f9; padding: 10px; border-radius: 10px; margin-top: 8px; display: none; }
-        input[type="checkbox"]:checked + div + .eff-container { display: block; }
-        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        :root {
+            --bg: #0b0e14;
+            --card: #161b22;
+            --primary: #58a6ff;
+            --success: #238636;
+            --text: #c9d1d9;
+            --accent: #bc8cff;
+        }
 
-        /* Chat Bot */
-        #bot-container { position: fixed; bottom: 20px; left: 20px; right: 20px; display: flex; align-items: center; background: var(--bot); color: white; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; transition: all 0.3s ease; }
-        #bot-avatar { font-size: 30px; margin-left: 15px; }
-        #bot-text { font-size: 14px; font-weight: 500; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-        .chart-container { height: 180px; }
-        .btn-reset { width: 100%; padding: 12px; background: none; border: 1px solid #ff3b30; color: #ff3b30; border-radius: 10px; cursor: pointer; }
+        .container { width: 100%; max-width: 600px; }
+
+        /* Header & Level System */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .level-badge { background: linear-gradient(45deg, var(--primary), var(--accent)); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.3); }
+
+        /* XP Bar */
+        .xp-container { width: 100%; height: 8px; background: #30363d; border-radius: 4px; margin-bottom: 30px; overflow: hidden; }
+        #xp-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
+
+        /* Card Styling */
+        .card {
+            background: var(--card);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); border-color: var(--primary); }
+
+        /* Task Items */
+        .task-row { display: flex; align-items: flex-start; gap: 15px; padding: 15px 0; border-bottom: 1px solid #30363d; }
+        .task-row:last-child { border: none; }
+        
+        .checkbox-wrapper { position: relative; width: 28px; height: 28px; }
+        input[type="checkbox"] { width: 28px; height: 28px; cursor: pointer; accent-color: var(--success); }
+
+        .task-info { flex-grow: 1; }
+        .task-label { display: block; font-size: 17px; font-weight: 500; margin-bottom: 5px; }
+        
+        .efficiency-box { background: #0d1117; padding: 12px; border-radius: 8px; margin-top: 10px; display: none; }
+        input[type="checkbox"]:checked ~ .efficiency-box { display: block; animation: fadeIn 0.3s; }
+
+        input[type="range"] { width: 100%; height: 6px; border-radius: 5px; background: #30363d; outline: none; }
+
+        /* Floating Bot */
+        #bot-bubble {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: var(--card);
+            border: 1px solid var(--primary);
+            padding: 15px;
+            border-radius: 20px 20px 20px 5px;
+            max-width: 200px;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn-reset { background: transparent; border: 1px dotted #f85149; color: #f85149; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>הצמיחה של איתי 🚀</h1>
+    <div class="header">
+        <h1>COMMAND CENTER</h1>
+        <div class="level-badge" id="level-text">LEVEL 1</div>
+    </div>
 
-    <div class="stat-card">
-        <div><span id="dailyScore" class="stat-val">0%</span><span class="stat-label">יעילות יומית</span></div>
-        <div><span id="tasksDone" class="stat-val">0/4</span><span class="stat-label">משימות</span></div>
-        <div><span id="streak" class="stat-val">🔥 1</span><span class="stat-label">רצף ימים</span></div>
+    <div class="xp-container">
+        <div id="xp-fill"></div>
     </div>
 
     <div class="card">
-        <h2>משימות היום</h2>
+        <h2 style="font-size: 18px; color: var(--primary);">DAILY OBJECTIVES</h2>
         <div id="taskList"></div>
     </div>
 
     <div class="card">
-        <h2>מגמת התקדמות</h2>
-        <div class="chart-container"><canvas id="growthChart"></canvas></div>
+        <h2 style="font-size: 18px; color: var(--accent);">WEEKLY FLOW</h2>
+        <div style="height: 150px;"><canvas id="performanceChart"></canvas></div>
     </div>
 
-    <button class="btn-reset" onclick="resetDay()">איפוס יום חדש</button>
+    <button class="btn-reset" onclick="resetDay()">RESET SYSTEM</button>
 </div>
 
-<div id="bot-container">
-    <div id="bot-avatar">🤖</div>
-    <div id="bot-text">שלום איתי! מוכן לכבוש את היעדים של היום?</div>
+<div id="bot-bubble">
+    <span style="font-size: 24px;">🤖</span>
+    <span id="bot-msg">מערכת מוכנה. מחכה לפקודות שלך, איתי.</span>
 </div>
 
 <script>
-    const tasks = [
-        { id: 'train', label: '💪 אימון גופני', weight: 1 },
-        { id: 'code', label: '💻 למידה ותכנות', weight: 1 },
-        { id: 'biz', label: '🚀 פיתוח העסק', weight: 1.5 },
-        { id: 'free', label: '☕ זמן חופשי', weight: 0.5 }
+    const taskData = [
+        { id: 'train', name: 'TRAINING', desc: 'כדורסל / אימון כוח', xp: 25 },
+        { id: 'code', name: 'DEV / STUDY', desc: 'תכנות ולימודים', xp: 25 },
+        { id: 'biz', name: 'BUSINESS', desc: 'קידום Shopify / מסחר', xp: 40 },
+        { id: 'mind', name: 'FLOW STATE', desc: 'זמן חופשי ומנוחה', xp: 10 }
     ];
 
-    const messages = {
-        start: "שלום איתי! מוכן לכבוש את היעדים של היום?",
-        first: "יופי של התחלה! המומנטום איתך.",
-        bizLow: "איתי, העסק דורש פוקוס. נסה להעלות את רמת הביצוע שם.",
-        half: "חצי דרך עברה! אל תוריד רגל מהגז.",
-        perfect: "יום מושלם! ככה בונים אימפריה. 🔥",
-        low: "יום רגוע מדי? זכור למה התחלת."
-    };
+    let currentXP = 0;
+    let level = 1;
 
-    const taskList = document.getElementById('taskList');
-    let chart;
-
-    tasks.forEach(t => {
-        taskList.innerHTML += `
-            <div class="task-item">
-                <div class="task-header">
-                    <label style="font-weight:600">${t.label}</label>
-                    <input type="checkbox" id="${t.id}" onchange="updateUI()">
-                </div>
-                <div class="eff-container">
-                    <span style="font-size:12px">יעילות: <b id="val-${t.id}">5</b>/10</span>
-                    <input type="range" id="range-${t.id}" min="1" max="10" value="5" oninput="updateUI()">
-                </div>
-            </div>`;
-    });
-
-    function updateBot(score, doneCount, bizEff) {
-        const botText = document.getElementById('bot-text');
-        if (doneCount === 0) botText.innerText = messages.start;
-        else if (doneCount === 1) botText.innerText = messages.first;
-        else if (doneCount === 4 && score > 80) botText.innerText = messages.perfect;
-        else if (bizEff < 5 && document.getElementById('biz').checked) botText.innerText = messages.bizLow;
-        else if (doneCount >= 2) botText.innerText = messages.half;
+    function init() {
+        const list = document.getElementById('taskList');
+        taskData.forEach(t => {
+            list.innerHTML += `
+                <div class="task-row">
+                    <div class="task-info">
+                        <label class="task-label">${t.name}</label>
+                        <span style="font-size:12px; color:#8b949e">${t.desc}</span>
+                        <div class="efficiency-box">
+                            <span style="font-size:11px">INTENSITY: <b id="val-${t.id}">5</b>/10</span>
+                            <input type="range" id="range-${t.id}" min="1" max="10" value="5" oninput="updateStats()">
+                        </div>
+                    </div>
+                    <input type="checkbox" id="${t.id}" onchange="updateStats()">
+                </div>`;
+        });
+        load();
     }
 
-    function updateUI() {
-        let totalWeightedEff = 0, totalPossibleWeight = 0, done = 0, bizEff = 5;
-
-        tasks.forEach(t => {
-            const isChecked = document.getElementById(t.id).checked;
+    function updateStats() {
+        let done = 0;
+        let dayXP = 0;
+        
+        taskData.forEach(t => {
+            const checked = document.getElementById(t.id).checked;
             const eff = document.getElementById(`range-${t.id}`).value;
             document.getElementById(`val-${t.id}`).innerText = eff;
-            if (isChecked) {
+            
+            if(checked) {
                 done++;
-                totalWeightedEff += (eff / 10) * t.weight;
-                if(t.id === 'biz') bizEff = eff;
+                dayXP += t.xp * (eff / 5);
             }
-            totalPossibleWeight += t.weight;
         });
 
-        const score = Math.round((totalWeightedEff / totalPossibleWeight) * 100);
-        document.getElementById('dailyScore').innerText = score + "%";
-        document.getElementById('tasksDone').innerText = `${done}/${tasks.length}`;
+        // XP Logic
+        currentXP = dayXP % 100;
+        level = Math.floor(dayXP / 100) + 1;
         
-        updateBot(score, done, bizEff);
-        saveData();
-        updateChart(score);
+        document.getElementById('xp-fill').style.width = currentXP + "%";
+        document.getElementById('level-text').innerText = "LEVEL " + level;
+
+        // Bot Reactions
+        const bot = document.getElementById('bot-msg');
+        if(done === 4) {
+            bot.innerText = "ביצועים מושלמים! המערכת בשיא.";
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        } else if (done > 0) {
+            bot.innerText = "זיהיתי התקדמות. המשך כך.";
+        }
+
+        save();
     }
 
-    function saveData() {
-        const state = {
-            tasks: tasks.map(t => ({ id: t.id, checked: document.getElementById(t.id).checked, eff: document.getElementById(`range-${t.id}`).value })),
-            date: new Date().toLocaleDateString()
-        };
-        localStorage.setItem('itaiTrackerState', JSON.stringify(state));
+    function save() {
+        const state = taskData.map(t => ({
+            id: t.id,
+            checked: document.getElementById(t.id).checked,
+            eff: document.getElementById(`range-${t.id}`).value
+        }));
+        localStorage.setItem('itai_pro_dashboard', JSON.stringify(state));
     }
 
-    function loadData() {
-        const saved = JSON.parse(localStorage.getItem('itaiTrackerState'));
-        if (saved) {
-            saved.tasks.forEach(t => {
-                const el = document.getElementById(t.id);
-                if (el) { el.checked = t.checked; document.getElementById(`range-${t.id}`).value = t.eff; }
+    function load() {
+        const saved = JSON.parse(localStorage.getItem('itai_pro_dashboard'));
+        if(saved) {
+            saved.forEach(s => {
+                const el = document.getElementById(s.id);
+                if(el) {
+                    el.checked = s.checked;
+                    document.getElementById(`range-${s.id}`).value = s.eff;
+                }
             });
-            updateUI();
+            updateStats();
         }
     }
 
     function resetDay() {
-        if(confirm("לאפס יום? הנתונים יישמרו במכשיר.")) {
-            tasks.forEach(t => { document.getElementById(t.id).checked = false; document.getElementById(`range-${t.id}`).value = 5; });
-            updateUI();
+        if(confirm("המערכת תתאפס. מוכן ליום חדש?")) {
+            taskData.forEach(t => {
+                document.getElementById(t.id).checked = false;
+                document.getElementById(`range-${t.id}`).value = 5;
+            });
+            updateStats();
         }
     }
 
-    const ctx = document.getElementById('growthChart').getContext('2d');
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'], datasets: [{ label: 'יעילות', data: [65, 70, 80, 0, 0, 0, 0], borderColor: '#007aff', tension: 0.4, fill: true, backgroundColor: 'rgba(0,122,255,0.1)' }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+    // Chart
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+            datasets: [{
+                label: 'Performance',
+                data: [40, 80, 60, 95, 0, 0, 0],
+                backgroundColor: '#58a6ff',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: { y: { display: false }, x: { grid: { display: false } } },
+            plugins: { legend: { display: false } }
+        }
     });
 
-    function updateChart(s) { chart.data.datasets[0].data[3] = s; chart.update(); }
-    window.onload = loadData;
+    init();
 </script>
 </body>
 </html>
